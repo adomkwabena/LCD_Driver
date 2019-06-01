@@ -136,7 +136,7 @@ void LCD_Init(void)
     // Initialize GPIO
     GPIO_Init();
     // Default value of the LCD enable pin
-    LCD_EN = 0;
+    LCD_EN_OFF();
     
     // ~15 milliseconds delay
     __delay_ms(15);     
