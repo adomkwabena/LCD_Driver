@@ -20,7 +20,39 @@
 
 #include <xc.h>
 #include <stdint.h>
+#include "mcc_generated_files/mcc.h"
 #include "LCD_driver.h"
+
+/**
+  Section: Private Function Prototypes
+ */
+
+/**
+  @Summary
+    This function writes 4 bits to the LCD
+ 
+  @Param 
+    nibble - data to be sent
+ 
+  @Param
+    register_select - selects register to which data is written
+  
+  @Returns
+    None 
+ */
+static void LCD_Write(const char nibble, uint8_t register_select);
+
+/**
+  @Summary
+    Initializes module specific GPIO
+   
+  @Param
+    None
+   
+  @Returns
+    None
+ */
+static void GPIO_Init(void);
 
 /** 
   Section: Module APIs
@@ -28,22 +60,59 @@
 
 static void LCD_Write(const char nibble, uint8_t register_select)
 {
-    (nibble & 0x08 || nibble & 0x80) ? LCD_D7 = 1 : LCD_D7 = 0;
-    (nibble & 0x04 || nibble & 0x40) ? LCD_D6 = 1 : LCD_D6 = 0;
-    (nibble & 0x02 || nibble & 0x20) ? LCD_D5 = 1 : LCD_D5 = 0;
-    (nibble & 0x01 || nibble & 0x10) ? LCD_D4 = 1 : LCD_D4 = 0;
+    if (nibble & BIT_3_MASK || nibble & BIT_7_MASK)
+    {
+        LCD_D7_ON();
+    }
+    else
+    {
+        LCD_D7_OFF();
+    }
+    if (nibble & BIT_2_MASK || nibble & BIT_6_MASK)
+    {
+        LCD_D6_ON();
+    }
+    else
+    {
+        LCD_D6_OFF();
+    }
+    if (nibble & BIT_1_MASK || nibble & BIT_5_MASK)
+    {
+        LCD_D5_ON();
+    }
+    else
+    {
+        LCD_D5_OFF();
+    }
+    if (nibble & BIT_0_MASK || nibble & BIT_4_MASK)
+    {
+        LCD_D4_ON();
+    }
+    else
+    {
+        LCD_D4_OFF();
+    }
     
-    // Register Selection
-    LCD_RS = register_select;
+    // Select appropriate register to write data
+    if (register_select == CMD)
+    {
+        // Write into the command register
+        LCD_RS_OFF();
+    }
+    else
+    {
+        // Write into the data register
+        LCD_RS_ON();
+    }
     
     // Clock data into LCD
     __delay_us(1);
-    LCD_EN = 1;
+    LCD_EN_ON();
     __delay_us(1);
-    LCD_EN = 0;
+    LCD_EN_OFF();
 }
 
-void LCD_Init(void)
+static void GPIO_Init(void)
 {
     // Configure LCD I/O pins as outputs
     LCD_RS_Tris = 0;
@@ -60,16 +129,17 @@ void LCD_Init(void)
     LCD_D5_ANSEL = 0;
     LCD_D6_ANSEL = 0;
     LCD_D7_ANSEL = 0;
-    
+}
+
+void LCD_Init(void)
+{
+    // Initialize GPIO
+    GPIO_Init();
     // Default value of the LCD enable pin
     LCD_EN = 0;
     
     // ~15 milliseconds delay
-    uint8_t i;
-    for (i = 0; i < 2; i++)
-    {
-        __delay_ms(5);     
-    }
+    __delay_ms(15);     
     
     // Function set
     LCD_Write(0x03, CMD);
@@ -137,33 +207,34 @@ void LCD_PutString_Cp(const char *s)
 
 void LCD_PutChar(uint8_t row, uint8_t column, const char c)
 {
-    if (row == 1)
+    if (row == FIRST_ROW)
     {
         // HD44780 first row addressing starts from zero hence the need to subtract 2
-        LCD_PutCmd((row + column -  2) | 0x80);
+        LCD_PutCmd((row + column -  ROW_1_ADDRESS_OFFSET) | SET_DDRAM_ADDRESS);
     }
-    else if (row == 2)
+    else if (row == SECOND_ROW)
     {
         // HD44780 second row addressing starts from 64 hence the need to add 61
-        LCD_PutCmd((row + column + 62) | 0x80);
+        LCD_PutCmd((row + column + ROW_2_ADDRESS_OFFSET) | SET_DDRAM_ADDRESS);
     }
     LCD_PutChar_Cp(c);
 }
 
 void LCD_PutString(uint8_t row, uint8_t column, const char *s)
 {
-    if (row == 1)
+    if (row == FIRST_ROW)
     {
         // HD44780 first row addressing starts from zero hence the need to subtract 2
-        LCD_PutCmd((row + column -  2) | 0x80);
+        LCD_PutCmd((row + column - ROW_1_ADDRESS_OFFSET) | SET_DDRAM_ADDRESS);
     }
-    else if (row == 2)
+    else if (row == SECOND_ROW)
     {
         // HD44780 second row addressing starts from 64 hence the need to add 61
-        LCD_PutCmd((row + column + 61) | 0x80);
+        LCD_PutCmd((row + column + ROW_2_ADDRESS_OFFSET) | SET_DDRAM_ADDRESS);
     }
     while (*s)
     {
         LCD_PutChar_Cp(*s++);
     }
 }
+
