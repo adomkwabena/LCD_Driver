@@ -10,8 +10,8 @@
   
   @Description
     This code supports 2x16 LCD only and the interface used is the 4-bit interface
-    This code was tested on a PIC18F46K22 and compiled using MPLABX v3.60
-    This code was built with the XC8 compiler v1.42
+    This code was tested on a PIC18F46K22 and compiled using MPLABX v5.15
+    This code was built with the XC8 compiler v2.05
  */
 
 /** 
